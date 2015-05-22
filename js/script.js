@@ -1,12 +1,29 @@
 
-/*************************************************
+/****************************************************************************
     Connect the Dots | Galen Scovell, 05/21/15      
-**************************************************/
+
+    Connecting points:
+     1) Find point p (point with largest y-coordinate).
+     2) Sort all other points by their polar angle with p.
+     3) Connect points in order.
+ 
+     Complexity: 
+     Outside of sorting, time complexity is ~O(5n) since we iterate over 
+     our n-sized Arrays five separate times. Space complexity is ~O(3n) as 
+     we have three Arrays of size n (points, lines, drawnLines) in memory 
+     at any one time.
+ 
+     JavaScript's built-in array.sort() utilizes either mergesort or quicksort
+     depending on browser. Time complexity either way is O(log(n)), space 
+     complexity is either O(n) [mergesort] or O(log(n)) [quicksort].
+****************************************************************************/
+
 
 
 var context;
 var points, lines, drawnLines;
-var currentLine, linesCreated;
+var currentLine;
+var linesCreated;
 var requestAnimationFrame = window.requestAnimationFrame || 
                             window.mozRequestAnimationFrame || 
                             window.webkitRequestAnimationFrame || 
@@ -24,9 +41,9 @@ function connectPoints() {
     }
     points.sort(angleComparison);
     var previousPoint = startingPoint;
-    for (var i = 1; i < points.length; i++) {
-        createLine(points[i], previousPoint);
-        previousPoint = points[i];
+    for (var j = 1; j < points.length; j++) {
+        createLine(points[j], previousPoint);
+        previousPoint = points[j];
     }
     createLine(startingPoint, points[points.length - 1]);
     linesCreated = true;
@@ -53,14 +70,14 @@ function createPoint(pointX, pointY) {
 function createLine(thisPoint, previousPoint) {
     var lineSlope = (thisPoint.y - previousPoint.y) / (thisPoint.x - previousPoint.x);
     var lineSections = Math.abs(thisPoint.x - previousPoint.x) / 30;
-    lines.push({startX: previousPoint.x,
-                startY: previousPoint.y,
-                currentX: previousPoint.x, 
-                currentY: previousPoint.y,
-                endX: thisPoint.x,
-                endY: thisPoint.y,
-                slope: lineSlope,
-                sections: lineSections});
+    if (thisPoint.x < previousPoint.x) {
+        lineSlope = -lineSlope;
+        lineSections = -lineSections;
+    }
+    lines.push({startX: previousPoint.x, startY: previousPoint.y,
+                currentX: previousPoint.x, currentY: previousPoint.y,
+                endX: thisPoint.x, endY: thisPoint.y,
+                slope: lineSlope, sections: lineSections});
 }
 
 
@@ -112,23 +129,18 @@ function animateLine(line) {
     context.lineWidth = 8;
     context.beginPath();
     context.moveTo(line.startX, line.startY);
-    if (line.currentX < line.endX) {
-        line.currentX += line.sections;
-        line.currentY += line.slope * line.sections;
-    } else {
-        line.currentX -= line.sections;
-        line.currentY -= line.slope * line.sections;
-    }
+    line.currentX += line.sections;
+    line.currentY += line.slope * Math.abs(line.sections);
     context.lineTo(line.currentX, line.currentY);
     context.stroke();
 
-    if ((line.startX < line.endX && line.currentX >= line.endX) || (line.startX > line.endX && line.currentX <= line.endX)) {
+    if ((line.startX <= line.endX && line.currentX >= line.endX) || (line.startX >= line.endX && line.currentX <= line.endX)) {
+        drawnLines.push(line);
         currentLine++;
         if (currentLine < points.length) {
             points[currentLine].state = 1;
             points[currentLine].frame = 300;
         }
-        drawnLines.push(line);
     }
 }
 
@@ -136,7 +148,7 @@ function animateLine(line) {
 /*******************************
     HELPER FUNCTIONS
 *******************************/
-function initCanvas() {
+function init() {
     $('#canvas').attr('height', window.innerHeight * 0.6);
     $('#canvas').attr('width', window.innerWidth * 0.8);
     context = $('#canvas')[0].getContext("2d");
@@ -167,11 +179,14 @@ $('#solve_button').click(function(e) {
         connectPoints();
         $(this).text('Reset');
     } else if ($(this).text() == 'Reset') {
-        initCanvas();
+        init();
     }
 })
 
 $('#canvas').click(function(e) {
+    if ($('#solve_button').text() == 'Reset') {
+        return;
+    }
     var offset = $(this).offset();
     var clickX = e.pageX - offset.left;
     var clickY = e.pageY - offset.top;
@@ -179,10 +194,10 @@ $('#canvas').click(function(e) {
 })
 
 $(window).resize(function() {
-    initCanvas();
+    init();
 })
 
 $(document).ready(function() {
-    initCanvas();
+    init();
     render();
 })
