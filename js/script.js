@@ -14,7 +14,7 @@ var requestAnimationFrame = window.requestAnimationFrame ||
 
 
 /*******************************
-    POINT FUNCTIONALITY
+    LOGIC
 *******************************/
 function connectPoints() {
     var startingPoint = findStartingPoint();
@@ -42,17 +42,17 @@ function findStartingPoint() {
         }
     }
     startingPoint.state = 1;
-    startingPoint.frame = 200;
+    startingPoint.frame = 300;
     return startingPoint;
 }
 
 function createPoint(pointX, pointY) {
-    points.push({x: pointX, y: pointY, angle: 0, frame: 200, state: 0});
+    points.push({x: pointX, y: pointY, angle: 0, frame: 300, state: 0});
 }
 
 function createLine(thisPoint, previousPoint) {
     var lineSlope = (thisPoint.y - previousPoint.y) / (thisPoint.x - previousPoint.x);
-    var lineSections = Math.abs(thisPoint.x - previousPoint.x) / 10;
+    var lineSections = Math.abs(thisPoint.x - previousPoint.x) / 30;
     lines.push({startX: previousPoint.x,
                 startY: previousPoint.y,
                 currentX: previousPoint.x, 
@@ -65,41 +65,38 @@ function createLine(thisPoint, previousPoint) {
 
 
 /*******************************
-    RENDER FUNCTIONS
+    RENDERING
 *******************************/
 function render() {
     context.clearRect(0, 0, canvas.width, canvas.height);
-    if (linesCreated && currentLine < lines.length) {
-        animateLine(lines[currentLine]);
+    if (linesCreated) {
+        renderLines();
+        if (currentLine < lines.length) {
+            animateLine(lines[currentLine]);
+        }
     }
-    renderLines();
     renderPoints();
     requestAnimationFrame(render);
 }
 
 function renderLines() {
-    context.shadowBlur = 3;
-    context.shadowColor = '#8e44ad';
-    context.strokeStyle = '#9b59b6';
-    context.lineWidth = 4;
+    context.strokeStyle = '#2980b9';
+    context.lineWidth = 6;
+    context.beginPath();
     for (var i = 0; i < drawnLines.length; i++) {
-        context.beginPath();
         context.moveTo(drawnLines[i].startX, drawnLines[i].startY)
         context.lineTo(drawnLines[i].endX, drawnLines[i].endY);
-        context.stroke();
     }
+    context.stroke();
 }
 
 function renderPoints() {
     for (var i = 0; i < points.length; i++) {
         if (points[i].state == 0) {
-            context.shadowColor = '#2c3e50';
             context.fillStyle = '#34495e';
         } else if (points[i].state == 1) {
-            context.shadowColor = '#2980b9';
             context.fillStyle = '#3498db';
         }
-        context.shadowBlur = 3;
         context.beginPath();
         context.arc(points[i].x, points[i].y, points[i].frame / 10, 0, 2 * Math.PI);
         context.closePath();
@@ -111,10 +108,8 @@ function renderPoints() {
 }
 
 function animateLine(line) {
-    context.shadowBlur = 3;
-    context.shadowColor = '#8e44ad';
-    context.strokeStyle = '#9b59b6';
-    context.lineWidth = 4;
+    context.strokeStyle = '#8e44ad';
+    context.lineWidth = 8;
     context.beginPath();
     context.moveTo(line.startX, line.startY);
     if (line.currentX < line.endX) {
@@ -126,11 +121,12 @@ function animateLine(line) {
     }
     context.lineTo(line.currentX, line.currentY);
     context.stroke();
+
     if ((line.startX < line.endX && line.currentX >= line.endX) || (line.startX > line.endX && line.currentX <= line.endX)) {
         currentLine++;
         if (currentLine < points.length) {
             points[currentLine].state = 1;
-            points[currentLine].frame = 200;
+            points[currentLine].frame = 300;
         }
         drawnLines.push(line);
     }
@@ -150,13 +146,6 @@ function initCanvas() {
     currentLine = 0;
     linesCreated = false;
     $('#solve_button').text('Solve');
-    render();
-}
-
-function printPoints() {
-    for (var i = 0; i < points.length; i++) {
-        console.log(points[i].x + ", " + points[i].y + ", " + points[i].angle);
-    }
 }
 
 function angleComparison(v, w) {
@@ -195,4 +184,5 @@ $(window).resize(function() {
 
 $(document).ready(function() {
     initCanvas();
+    render();
 })
